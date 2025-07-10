@@ -35,7 +35,8 @@ function getLocalTime(unixTimestamp, timezoneOffsetSeconds) {
 
     // Formatea la hora
     const hours = localDate.getUTCHours().toString().padStart(2, '0');
-    const minutes = localDate.getUTCMinutes().toString().padStart(2, '0');
+    // CORRECCIÓN: 'getUTCMminutes' cambió a 'getUTCMinutes'
+    const minutes = localDate.getUTCMinutes().toString().padStart(2, '0'); 
 
     return `${hours}:${minutes}`;
 }
@@ -156,13 +157,12 @@ async function getWeatherAndForecast(cityOverride) {
                 const tempHourly = item.main.temp.toFixed(0);
                 const descHourly = item.weather[0].description.toLowerCase();
                 const iconHourly = item.weather[0].icon;
-                const iconUrlHourly = `https://openweathermap.org/img/wn/${iconHourly}.png`;
+                const iconUrlHourly = `https://openweathermap.org/img/wn/${iconHourly}.png`; // Esta ya es la URL completa
 
                 hourlyHtml += `
                     <div class="hourly-item ${descHourly.includes("lluvia") ? "bad-weather" : "good-weather"}">
                         <p class="hourly-time">${timeLabel}</p>
-                        <img src="https://openweathermap.org/img/wn/${iconUrlHourly}" alt="Icono clima hora">
-                        <p class="hourly-temp">${tempHourly}°C</p>
+                        <img src="${iconUrlHourly}" alt="Icono clima hora"> <p class="hourly-temp">${tempHourly}°C</p>
                         <p class="hourly-desc">${descHourly.charAt(0).toUpperCase() + descHourly.slice(1)}</p>
                     </div>
                 `;
