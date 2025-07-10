@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>App del Clima</title>
-  
+
   <link rel="stylesheet" href="style.css" />
-  
+
   <link rel="manifest" href="manifest.json">
-  
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -17,7 +17,8 @@
     <p>🌎 Ingresá una ciudad para ver el clima actual y pronóstico</p>
 
     <div class="input-section">
-      input type="text" id="cityInput" value="Buenos Aires, Autonomous City of Buenos Aires, Argentina" placeholder="Ej: Rosario" />
+      <!-- Aquí se ha añadido el atributo 'value' para prellenar el campo de texto -->
+      <input type="text" id="cityInput" value="Buenos Aires, Autonomous City of Buenos Aires, Argentina" placeholder="Ej: Rosario" />
       <button id="searchButton">
         <i class="fas fa-search-location"></i> Consultar
       </button>
