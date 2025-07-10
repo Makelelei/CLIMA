@@ -19,12 +19,10 @@
 
 body {
   font-family: 'Segoe UI', sans-serif;
-  /* ¡Aquí está la modificación para tu fondo de imagen! */
   background-image: url('images/fondo.jpg');
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  /* La línea 'background: linear-gradient...' ha sido reemplazada */
   margin: 0;
   padding: 0;
   display: flex;
@@ -34,13 +32,14 @@ body {
 }
 
 .container {
-  background: var(--container-bg); /* Usa la variable con 30% de transparencia */
+  background: var(--container-bg);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 0 15px var(--container-shadow); /* Usa la variable de sombra */
+  box-shadow: 0 0 15px var(--container-shadow);
   text-align: center;
   width: 90%;
   max-width: 500px;
+  position: relative; /* Necesario para posicionar las sugerencias */
 }
 
 .input-section {
@@ -48,14 +47,15 @@ body {
   display: flex;
   gap: 10px;
   justify-content: center;
+  position: relative; /* Necesario para posicionar las sugerencias */
 }
 
 input {
   padding: 10px;
-  flex-grow: 1; /* Permite que el input ocupe el espacio disponible */
+  flex-grow: 1;
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  box-sizing: border-box; /* Incluye padding y border en el ancho total */
+  box-sizing: border-box;
 }
 
 button {
@@ -66,7 +66,7 @@ button {
   border-radius: 5px;
   cursor: pointer;
   transition: background 0.3s ease;
-  white-space: nowrap; /* Evita que el texto del botón se rompa en varias líneas */
+  white-space: nowrap;
 }
 
 button:hover {
@@ -83,13 +83,13 @@ button:hover {
   margin-top: 15px;
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 0 5px rgba(0,0,0,0.1); /* Mantiene una ligera sombra para los bloques internos si es necesario */
-  text-align: left; /* Alinea el texto a la izquierda para mejor lectura */
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  text-align: left;
 }
 
 .weather-card h2,
 .forecast-block h4 {
-  text-align: center; /* Centra los títulos dentro de las tarjetas */
+  text-align: center;
   margin-top: 0;
 }
 
@@ -107,8 +107,8 @@ button:hover {
 
 .weather-card img,
 .forecast-block img {
-    display: block; /* Asegura que la imagen ocupe su propio bloque */
-    margin: 0 auto 10px auto; /* Centra la imagen y añade margen inferior */
+    display: block;
+    margin: 0 auto 10px auto;
 }
 
 footer {
@@ -129,11 +129,11 @@ footer a:hover {
 /* Media Queries para responsividad */
 @media (max-width: 600px) {
   .input-section {
-    flex-direction: column; /* Apila el input y el botón en pantallas pequeñas */
+    flex-direction: column;
   }
 
   input, button {
-    width: 100%; /* Ocupan todo el ancho disponible */
+    width: 100%;
   }
 }
 
@@ -141,9 +141,9 @@ footer a:hover {
 .hourly-section {
     margin-top: 25px;
     padding: 15px;
-    background: var(--container-bg); /* Usa la variable con 30% de transparencia */
+    background: var(--container-bg);
     border-radius: 12px;
-    box-shadow: 0 0 10px var(--container-shadow); /* Usa la variable de sombra */
+    box-shadow: 0 0 10px var(--container-shadow);
 }
 
 .hourly-section h3 {
@@ -155,7 +155,7 @@ footer a:hover {
 
 .hourly-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Columnas responsivas */
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 15px;
     justify-content: center;
     text-align: center;
@@ -164,7 +164,7 @@ footer a:hover {
 .hourly-item {
     padding: 10px 5px;
     border-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.7); /* Fondo suave con algo de opacidad para visibilidad */
+    background-color: rgba(255, 255, 255, 0.7);
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
@@ -179,7 +179,7 @@ footer a:hover {
 }
 
 .hourly-item img {
-    width: 40px; /* Tamaño del icono */
+    width: 40px;
     height: 40px;
     margin-bottom: 5px;
 }
@@ -204,13 +204,13 @@ footer a:hover {
 
 /* Ajustes para colores de buen/mal clima en hourly-item */
 .hourly-item.good-weather {
-    background: linear-gradient(to bottom, rgba(224, 242, 247, 0.7), rgba(240, 250, 250, 0.7)); /* Con opacidad */
+    background: linear-gradient(to bottom, rgba(224, 242, 247, 0.7), rgba(240, 250, 250, 0.7));
     color: #034f84;
     border: 1px solid #a2d4ee;
 }
 
 .hourly-item.bad-weather {
-    background: linear-gradient(to bottom, rgba(242, 230, 244, 0.7), rgba(250, 250, 250, 0.7)); /* Con opacidad */
+    background: linear-gradient(to bottom, rgba(242, 230, 244, 0.7), rgba(250, 250, 250, 0.7));
     color: #5a2a7b;
     border: 1px solid #cbb4d4;
 }
@@ -228,4 +228,31 @@ footer a:hover {
         width: 35px;
         height: 35px;
     }
+}
+
+/* Estilos para las sugerencias de ciudades */
+.city-suggestions {
+  position: absolute; /* Posicionamiento absoluto respecto a .input-section */
+  top: 100%; /* Debajo del input */
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.9); /* Fondo blanco semitransparente para las sugerencias */
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  max-height: 200px; /* Altura máxima para hacer scroll */
+  overflow-y: auto; /* Habilita el scroll vertical */
+  z-index: 1000; /* Asegura que esté por encima de otros elementos */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  display: none; /* Oculto por defecto, JavaScript lo mostrará */
+}
+
+.city-suggestion-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  text-align: left;
+  color: #333;
+}
+
+.city-suggestion-item:hover {
+  background-color: #f0f0f0;
 }
