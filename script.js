@@ -1,119 +1,147 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const searchButton = document.getElementById('searchButton');
+  searchButton.addEventListener('click', () => {
+    getWeatherAndForecast();
+  });
+
+  const cityInput = document.getElementById('cityInput');
+  cityInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+      getWeatherAndForecast();
+    }
+  });
+});
+
+// Función auxiliar para obtener la dirección cardinal del viento
 function getCardinalDirection(degrees) {
-  const dirs = ['Norte', 'Noreste', 'Este', 'Sureste', 'Sur', 'Suroeste', 'Oeste', 'Noroeste'];
+  const dirs = ['Norte', 'Noreste', 'Este', 'Oeste', 'Suroeste', 'Sur', 'Noroeste']; // Ajustado para 7 puntos
   const index = Math.round(degrees / 45) % 8;
   return dirs[index];
 }
 
-async function getWeather() {
-  const city = document.getElementById("cityInput").value;
-  const apiKey = "c4381f22c73ec16dc79729cec227af4e";
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=es`;
-
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (response.ok) {
-      const iconUrl = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
-      const temp = data.main.temp;
-      const humidity = data.main.humidity;
-      const pressure = data.main.pressure;
-      const visibility = data.visibility;
-      const windKmh = data.wind.speed * 3.6;
-      const windKt = (windKmh / 1.852).toFixed(2);
-      const windDeg = data.wind.deg;
-      const windDir = getCardinalDirection(windDeg);
-      const description = data.weather[0].description.toLowerCase();
-
-      const isGood = (
-        description.includes("despejado") ||
-        description.includes("cielo claro") ||
-        (temp >= 18 && temp <= 27 && windKt < 15 && visibility > 7000)
-      );
-      const weatherClass = isGood ? "good-weather" : "bad-weather";
-
-      const container = document.getElementById("weatherResult");
-      container.className = "result";
-      container.innerHTML = `
-        <div class="weather-card ${weatherClass}">
-          <h2><i class="fas fa-map-marker-alt"></i> ${data.name}, ${data.sys.country}</h2>
-          <img src="${iconUrl}" alt="Clima">
-          <p><i class="fas fa-thermometer-half"></i> Temp: ${temp} °C</p>
-          <p><i class="fas fa-water"></i> Humedad: ${humidity}%</p>
-          <p><i class="fas fa-tachometer-alt"></i> Presión: ${pressure} hPa</p>
-          <p><i class="fas fa-eye"></i> Visibilidad: ${visibility} m</p>
-          <p><i class="fas fa-wind"></i> Viento: ${windKmh.toFixed(2)} km/h (${windKt} kt)</p>
-          <p><i class="fas fa-compass"></i> Dirección: ${windDeg}° (${windDir})</p>
-          <p><i class="fas fa-cloud"></i> Estado: ${description}</p>
-        </div>
-      `;
-    } else {
-      document.getElementById("weatherResult").innerText = `Error: ${data.message}`;
-    }
-  } catch (error) {
-    console.error("Error en getWeather:", error);
-    document.getElementById("weatherResult").innerText = `Ocurrió un error: ${error.message}`;
+async function getWeatherAndForecast() {
+  const city = document.getElementById("cityInput").value.trim(); // .trim() para limpiar espacios
+  if (!city) {
+    document.getElementById("weatherResult").innerHTML = `<p class="error-message">Por favor, ingresa el nombre de una ciudad.</p>`;
+    return;
   }
-}
 
-async function getForecast() {
-  const city = document.getElementById("cityInput").value;
-  const apiKey = "c4381f22c73ec16dc79729cec227af4e";
-  const url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric&lang=es`;
+  const apiKey = "c4381f22c73ec16dc79729cec227af4e"; // Tu clave de API
+
+  const weatherResultContainer = document.getElementById("weatherResult");
+  weatherResultContainer.innerHTML = '<p>Cargando datos...</p>'; // Mensaje de carga
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    // **1. Obtener clima actual**
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=es`;
+    const weatherResponse = await fetch(weatherUrl);
+    const weatherData = await weatherResponse.json();
 
-    if (response.ok) {
-      const forecastDiv = document.createElement("div");
-      forecastDiv.innerHTML = `<h3><i class="fas fa-calendar-day"></i> Pronóstico próximo</h3>`;
+    if (!weatherResponse.ok) {
+      throw new Error(weatherData.message || 'Ciudad no encontrada.');
+    }
 
-      // Agrupar por día (fecha sin hora)
-      const forecastByDay = {};
-      data.list.forEach(item => {
-        const dateOnly = item.dt_txt.split(" ")[0];
-        if (!forecastByDay[dateOnly]) {
-          forecastByDay[dateOnly] = item;
+    const iconUrl = `https://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`;
+    const temp = weatherData.main.temp;
+    const humidity = weatherData.main.humidity;
+    const pressure = weatherData.main.pressure;
+    // La visibilidad viene en metros, a veces 10000 es el máximo
+    const visibilityKm = (weatherData.visibility / 1000).toFixed(1); 
+    const windKmh = (weatherData.wind.speed * 3.6).toFixed(1);
+    const windKt = (windKmh / 1.852).toFixed(1);
+    const windDeg = weatherData.wind.deg;
+    const windDir = getCardinalDirection(windDeg);
+    const description = weatherData.weather[0].description.toLowerCase();
+
+    // Lógica para determinar "buen" o "mal" clima
+    const isGood = (
+      description.includes("despejado") ||
+      description.includes("cielo claro") ||
+      (temp >= 15 && temp <= 30 && windKt < 20 && weatherData.visibility > 8000)
+    );
+    const weatherClass = isGood ? "good-weather" : "bad-weather";
+
+    let weatherHtml = `
+      <div class="weather-card ${weatherClass}">
+        <h2><i class="fas fa-map-marker-alt"></i> ${weatherData.name}, ${weatherData.sys.country}</h2>
+        <img src="${iconUrl}" alt="Clima">
+        <p><i class="fas fa-thermometer-half"></i> Temp: ${temp} °C</p>
+        <p><i class="fas fa-water"></i> Humedad: ${humidity}%</p>
+        <p><i class="fas fa-tachometer-alt"></i> Presión: ${pressure} hPa</p>
+        <p><i class="fas fa-eye"></i> Visibilidad: ${visibilityKm} km</p>
+        <p><i class="fas fa-wind"></i> Viento: ${windKmh} km/h (${windKt} kt)</p>
+        <p><i class="fas fa-compass"></i> Dirección: ${windDeg}° (${windDir})</p>
+        <p><i class="fas fa-cloud"></i> Estado: ${description.charAt(0).toUpperCase() + description.slice(1)}</p>
+      </div>
+    `;
+
+    // **2. Obtener pronóstico extendido**
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric&lang=es`;
+    const forecastResponse = await fetch(forecastUrl);
+    const forecastData = await forecastResponse.json();
+
+    if (!forecastResponse.ok) {
+      throw new Error(forecastData.message || 'Error al obtener el pronóstico.');
+    }
+
+    let forecastHtml = `<h3><i class="fas fa-calendar-day"></i> Pronóstico para los próximos días</h3>`;
+
+    // Agrupar pronósticos por día y tomar el del mediodía (o el más cercano)
+    const dailyForecasts = {};
+    const today = new Date().toLocaleDateString("es-ES", { year: 'numeric', month: 'numeric', day: 'numeric' });
+
+    forecastData.list.forEach(item => {
+      const date = new Date(item.dt * 1000); // Convertir timestamp a fecha
+      const dateKey = date.toLocaleDateString("es-ES", { year: 'numeric', month: 'numeric', day: 'numeric' });
+      const hour = date.getHours();
+
+      // Ignorar el día actual y tomar la entrada cercana al mediodía (12-15h)
+      if (dateKey !== today) {
+        if (!dailyForecasts[dateKey] || (hour >= 12 && hour <= 15)) { // Prioriza la entrada del mediodía
+          dailyForecasts[dateKey] = item;
         }
-      });
+      }
+    });
+    
+    // Convertir a array y limitar a los próximos 3 días
+    const upcomingDays = Object.values(dailyForecasts).slice(0, 3);
 
-      // Tomar los siguientes 3 días (omitimos hoy)
-      const dates = Object.keys(forecastByDay).slice(1, 4);
-      dates.forEach(date => {
-        const item = forecastByDay[date];
+    if (upcomingDays.length > 0) {
+      upcomingDays.forEach(item => {
         const dateLabel = new Date(item.dt_txt).toLocaleDateString("es-ES", {
           weekday: "long",
           day: "numeric",
           month: "short"
         });
-        const temp = item.main.temp;
+        const temp = item.main.temp.toFixed(1);
         const desc = item.weather[0].description.toLowerCase();
         const icon = item.weather[0].icon;
-        const iconUrl = `https://openweathermap.org/img/wn/${icon}@2x.png`;
-        const windKmh = item.wind.speed * 3.6;
-        const windKt = (windKmh / 1.852).toFixed(1);
-        const windDeg = item.wind.deg;
-        const windDir = getCardinalDirection(windDeg);
-        const blockClass = desc.includes("lluvia") || windKt > 20 ? "bad-weather" : "good-weather";
+        const iconUrlForecast = `https://openweathermap.org/img/wn/${icon}@2x.png`;
+        const windKmhForecast = (item.wind.speed * 3.6).toFixed(1);
+        const windKtForecast = (windKmhForecast / 1.852).toFixed(1);
+        const windDegForecast = item.wind.deg;
+        const windDirForecast = getCardinalDirection(windDegForecast);
+        const blockClass = desc.includes("lluvia") || parseFloat(windKtForecast) > 20 ? "bad-weather" : "good-weather";
 
-        forecastDiv.innerHTML += `
+        forecastHtml += `
           <div class="forecast-block ${blockClass}">
-            <h4><i class="fas fa-calendar-day"></i> ${dateLabel}</h4>
-            <img src="${iconUrl}" alt="Icono clima">
-            <p><i class="fas fa-thermometer-half"></i> ${temp} °C</p>
-            <p><i class="fas fa-wind"></i> Viento: ${windKmh.toFixed(1)} km/h (${windKt} kt) desde ${windDir}</p>
-            <p><i class="fas fa-cloud"></i> Estado: ${desc}</p>
+            <h4><i class="fas fa-calendar-day"></i> ${dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</h4>
+            <img src="${iconUrlForecast}" alt="Icono clima">
+            <p><i class="fas fa-thermometer-half"></i> Temp: ${temp} °C</p>
+            <p><i class="fas fa-wind"></i> Viento: ${windKmhForecast} km/h (${windKtForecast} kt) desde ${windDirForecast}</p>
+            <p><i class="fas fa-cloud"></i> Estado: ${desc.charAt(0).toUpperCase() + desc.slice(1)}</p>
           </div>
         `;
       });
-
-      document.getElementById("weatherResult").appendChild(forecastDiv);
     } else {
-      document.getElementById("weatherResult").innerText = `Error: ${data.message}`;
+      forecastHtml += `<p>No se pudo obtener el pronóstico extendido.</p>`;
     }
+    
+    // Unir el HTML del clima actual y el pronóstico
+    weatherResultContainer.innerHTML = weatherHtml + forecastHtml;
+
   } catch (error) {
-    console.error("Error en getForecast:", error);
-    document.getElementById("weatherResult").innerText = `Ocurrió un error: ${error.message}`;
+    console.error("Error al obtener datos del clima:", error);
+    weatherResultContainer.innerHTML = `<p class="error-message">Ocurrió un error: ${error.message}</p>`;
   }
 }
