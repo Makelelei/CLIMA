@@ -1,8 +1,8 @@
 :root {
   --primary-gradient-start: #74ebd5;
   --primary-gradient-end: #9face6;
-  --container-bg: rgba(255, 255, 255, 0.3); /* Cambiado a 30% de transparencia (blanco) */
-  --container-shadow: rgba(0,0,0,0.1); /* Sombra ligera para visibilidad con transparencia */
+  --container-bg: rgba(255, 255, 255, 0.3);
+  --container-shadow: rgba(0,0,0,0.1);
   --button-bg: #007BFF;
   --button-hover-bg: #0056b3;
   --border-color: #ccc;
@@ -25,10 +25,12 @@ body {
   background-attachment: fixed;
   margin: 0;
   padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  /* Eliminar display: flex; justify-content: center; align-items: center; */
   min-height: 100vh;
+  
+  /* APLICAR FUENTE NEGRA Y GRUESA A TODO EL BODY */
+  color: black; 
+  font-weight: bold;
 }
 
 .container {
@@ -38,8 +40,10 @@ body {
   box-shadow: 0 0 15px var(--container-shadow);
   text-align: center;
   width: 90%;
-  max-width: 500px;
-  position: relative; /* Necesario para posicionar las sugerencias */
+  /* Eliminado max-width para permitir que se expanda */
+  max-width: 1200px; /* Ancho máximo para mantener la legibilidad en pantallas muy grandes, pero mucho más amplio */
+  margin: 20px auto; /* Centrar el contenedor horizontalmente y añadir margen superior/inferior */
+  position: relative;
 }
 
 .input-section {
@@ -47,7 +51,7 @@ body {
   display: flex;
   gap: 10px;
   justify-content: center;
-  position: relative; /* Necesario para posicionar las sugerencias */
+  position: relative;
 }
 
 input {
@@ -84,7 +88,7 @@ button:hover {
   padding: 15px;
   border-radius: 8px;
   box-shadow: 0 0 5px rgba(0,0,0,0.1);
-  text-align: left;
+  text-align: center; 
 }
 
 .weather-card h2,
@@ -94,14 +98,16 @@ button:hover {
 }
 
 .good-weather {
+  /* Mantener color específico de buen clima */
   background: linear-gradient(to right, var(--good-weather-bg-start), var(--good-weather-bg-end));
-  color: var(--good-weather-text);
+  color: var(--good-weather-text); 
   border-left: 5px solid var(--good-weather-border);
 }
 
 .bad-weather {
+  /* Mantener color específico de mal clima */
   background: linear-gradient(to right, var(--bad-weather-bg-start), var(--bad-weather-bg-end));
-  color: var(--bad-weather-text);
+  color: var(--bad-weather-text); 
   border-left: 5px solid var(--bad-weather-border);
 }
 
@@ -114,7 +120,8 @@ button:hover {
 footer {
   margin-top: 30px;
   font-size: 14px;
-  color: #555;
+  /* Eliminar color para que herede del body (negro) */
+  /* color: #555; */ 
 }
 
 footer a {
@@ -172,6 +179,10 @@ footer a:hover {
     font-size: 0.9em;
     border: 1px solid #eee;
     transition: transform 0.2s ease;
+    
+    /* Configuración para la expansión: */
+    overflow: hidden; /* Ocultar el contenido extra */
+    cursor: pointer;
 }
 
 .hourly-item:hover {
@@ -232,18 +243,18 @@ footer a:hover {
 
 /* Estilos para las sugerencias de ciudades */
 .city-suggestions {
-  position: absolute; /* Posicionamiento absoluto respecto a .input-section */
-  top: 100%; /* Debajo del input */
+  position: absolute;
+  top: 100%;
   left: 0;
   right: 0;
-  background-color: rgba(255, 255, 255, 0.9); /* Fondo blanco semitransparente para las sugerencias */
+  background-color: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  max-height: 200px; /* Altura máxima para hacer scroll */
-  overflow-y: auto; /* Habilita el scroll vertical */
-  z-index: 1000; /* Asegura que esté por encima de otros elementos */
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  display: none; /* Oculto por defecto, JavaScript lo mostrará */
+  display: none;
 }
 
 .city-suggestion-item {
@@ -255,4 +266,47 @@ footer a:hover {
 
 .city-suggestion-item:hover {
   background-color: #f0f0f0;
+}
+
+/* ---------------------------------------------------- */
+/* ESTILOS AÑADIDOS PARA LA ANIMACIÓN DE EXPANSIÓN (Minimalista) */
+/* ---------------------------------------------------- */
+
+/* Detalles ocultos inicialmente */
+.hourly-details {
+    /* Ocultar contenido con altura máxima 0 */
+    max-height: 0; 
+    opacity: 0; 
+    padding: 0 10px; /* Asegurar que no hay padding visible */
+    margin-top: 10px;
+    text-align: left;
+    font-size: 0.9em;
+    color: #555;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+    /* Transición suave y profesional (mayor tiempo) */
+    transition: max-height 0.8s ease-in-out, opacity 0.6s ease-in-out, padding 0.8s ease-in-out;
+}
+
+/* Estilo para el bloque expandido */
+.hourly-item.expanded {
+    /* Ajusta el fondo para hacerlo más visible al expandir */
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    /* Puedes ajustar el ancho si deseas que el bloque crezca lateralmente al expandirse.
+        Si quieres que se mantenga el ancho original, puedes omitir esta línea. */
+    /* width: auto; */ 
+    
+    /* Nota: Si el contenedor .container o .hourly-grid no permite el crecimiento de .hourly-item, 
+        es posible que necesites ajustar sus propiedades de 'display' o 'flex-wrap'. */
+}
+
+/* Mostrar detalles al expandir */
+.hourly-item.expanded .hourly-details {
+    max-height: 500px; /* Suficiente altura para el contenido */
+    opacity: 1;
+    padding: 10px 10px; /* Añadir padding para revelar el contenido */
+    
+    /* Asegurar que el contenido de los detalles tenga el color correcto */
+    color: inherit; 
 }
