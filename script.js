@@ -20,6 +20,28 @@ function getCardinalDirection(degrees) {
 }
 
 /**
+ * Obtiene la hora local de una ciudad dado su timestamp UTC y su offset de zona horaria.
+ * @param {number} unixTimestamp - El timestamp UTC de la ciudad (en segundos).
+ * @param {number} timezoneOffsetSeconds - El desplazamiento de la zona horaria en segundos desde UTC.
+ * @returns {string} La hora local formateada (HH:MM).
+ */
+function getLocalTime(unixTimestamp, timezoneOffsetSeconds) {
+    // Crea una fecha UTC a partir del timestamp
+    const utcDate = new Date(unixTimestamp * 1000); // Convertir segundos a milisegundos
+
+    // Aplica el desplazamiento de la zona horaria
+    const localTimeMs = utcDate.getTime() + (timezoneOffsetSeconds * 1000);
+    const localDate = new Date(localTimeMs);
+
+    // Formatea la hora
+    const hours = localDate.getUTCHours().toString().padStart(2, '0');
+    const minutes = localDate.getUTCMinutes().toString().padStart(2, '0');
+
+    return `${hours}:${minutes}`;
+}
+
+
+/**
  * Función principal para obtener y mostrar el clima y pronóstico.
  * Ahora puede ser llamada con una ciudad específica (desde sugerencias)
  * o tomar el valor del input (desde botón/enter).
@@ -71,6 +93,9 @@ async function getWeatherAndForecast(cityOverride) {
             throw new Error(weatherData.message || 'Error al obtener el clima actual.');
         }
 
+        // Obtener la hora local de la ciudad
+        const localTime = getLocalTime(weatherData.dt, weatherData.timezone);
+
         const iconUrl = `https://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`;
         const temp = weatherData.main.temp;
         const humidity = weatherData.main.humidity;
@@ -89,10 +114,10 @@ async function getWeatherAndForecast(cityOverride) {
         );
         const weatherClass = isGood ? "good-weather" : "bad-weather";
 
-        // Generar HTML del clima actual
+        // Generar HTML del clima actual, incluyendo la hora local
         let weatherHtml = `
             <div class="weather-card ${weatherClass}">
-                <h2><i class="fas fa-map-marker-alt"></i> ${fullLocationName}</h2>
+                <h2><i class="fas fa-map-marker-alt"></i> ${fullLocationName} <span class="local-time">(${localTime} Local)</span></h2>
                 <img src="${iconUrl}" alt="Clima">
                 <p><i class="fas fa-thermometer-half"></i> Temp: ${temp} °C</p>
                 <p><i class="fas fa-water"></i> Humedad: ${humidity}%</p>
@@ -136,7 +161,7 @@ async function getWeatherAndForecast(cityOverride) {
                 hourlyHtml += `
                     <div class="hourly-item ${descHourly.includes("lluvia") ? "bad-weather" : "good-weather"}">
                         <p class="hourly-time">${timeLabel}</p>
-                        <img src="${iconUrlHourly}" alt="Icono clima hora">
+                        <img src="https://openweathermap.org/img/wn/${iconUrlHourly}" alt="Icono clima hora">
                         <p class="hourly-temp">${tempHourly}°C</p>
                         <p class="hourly-desc">${descHourly.charAt(0).toUpperCase() + descHourly.slice(1)}</p>
                     </div>
