@@ -1,57 +1,32 @@
 // Referencias a elementos del DOM
 const cityInput = document.getElementById('cityInput');
 const searchButton = document.getElementById('searchButton');
-const citySuggestions = document.getElementById('citySuggestions'); // Nuevo elemento para sugerencias
+const citySuggestions = document.getElementById('citySuggestions');
 
 // --- CONFIGURACIÓN DE LA API ---
-const OPENWEATHER_API_KEY = "c4381f22c73ec16dc79729cec227af4e"; // Tu clave API de OpenWeatherMap
-const GEOCODING_API_URL = 'https://api.openweathermap.org/geo/1.0/direct'; // API de Geocodificación
-const WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather'; // API del clima actual
-const FORECAST_API_URL = 'https://api.openweathermap.org/data/2.5/forecast'; // API de pronóstico
+const OPENWEATHER_API_KEY = "c4381f22c73ec16dc79729cec227af4e";
+const GEOCODING_API_URL = 'https://api.openweathermap.org/geo/1.0/direct';
+const WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather';
+const FORECAST_API_URL = 'https://api.openweathermap.org/data/2.5/forecast';
 
-// Variable para controlar el "debounce" en las sugerencias
 let debounceTimeout;
+let hourlyForecastData = [];
 
-// Almacena temporalmente los datos del pronóstico por horas
-let hourlyForecastData = []; 
-
-// Función auxiliar para obtener la dirección cardinal del viento
 function getCardinalDirection(degrees) {
     const dirs = ['Norte', 'Noreste', 'Este', 'Sureste', 'Sur', 'Suroeste', 'Oeste', 'Noroeste'];
     const index = Math.round(degrees / 45) % 8;
     return dirs[index];
 }
 
-/**
- * Obtiene la hora local de una ciudad dado su timestamp UTC y su offset de zona horaria.
- * @param {number} unixTimestamp - El timestamp UTC de la ciudad (en segundos).
- * @param {number} timezoneOffsetSeconds - El desplazamiento de la zona horaria en segundos desde UTC.
- * @returns {string} La hora local formateada (HH:MM).
- */
 function getLocalTime(unixTimestamp, timezoneOffsetSeconds) {
-    // 1. Obtener la fecha en UTC a partir del timestamp
-    const utcDate = new Date(unixTimestamp * 1000); 
-    
-    // 2. Calcular la hora local ajustada por el offset de la zona horaria
-    //    utcDate.getTime() obtiene los milisegundos desde epoch en UTC.
-    //    timezoneOffsetSeconds * 1000 convierte el offset a milisegundos.
+    const utcDate = new Date(unixTimestamp * 1000);
     const localTimeMs = utcDate.getTime() + (timezoneOffsetSeconds * 1000);
-    
-    // 3. Crear una nueva fecha con el tiempo ajustado.
     const localDate = new Date(localTimeMs);
-
-    // 4. CORRECCIÓN: Usar getHours() y getMinutes() para obtener la hora y minutos
-    //    de la fecha ajustada (ya está en la hora local correcta).
     const hours = localDate.getHours().toString().padStart(2, '0');
-    const minutes = localDate.getMinutes().toString().padStart(2, '0'); 
-
+    const minutes = localDate.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
 }
 
-
-/**
- * Función principal para obtener y mostrar el clima y pronóstico.
- */
 async function getWeatherAndForecast(cityOverride) {
     const city = cityOverride || cityInput.value.trim();
 
@@ -62,38 +37,27 @@ async function getWeatherAndForecast(cityOverride) {
         return;
     }
 
-    console.log(`Buscando clima para: ${city}`);
-
     const currentWeatherDisplay = document.getElementById("currentWeatherDisplay");
     const hourlyForecastContainer = document.getElementById("hourlyForecast");
     const dailyForecastDisplay = document.getElementById("dailyForecastDisplay");
 
-    // Limpiar todos los contenedores al inicio de una nueva búsqueda
     currentWeatherDisplay.innerHTML = '<p>Cargando clima actual...</p>';
     hourlyForecastContainer.innerHTML = '<p>Cargando pronóstico por horas...</p>';
     dailyForecastDisplay.innerHTML = '<p>Cargando pronóstico diario...</p>';
 
     try {
-        // 1. Obtener coordenadas y nombre completo de la ciudad
         const geoResponse = await fetch(`${GEOCODING_API_URL}?q=${city}&limit=1&appid=${OPENWEATHER_API_KEY}`);
         const geoData = await geoResponse.json();
 
-        if (geoData.length === 0) {
-            throw new Error('Ciudad no encontrada. Intenta con otro nombre.');
-        }
+        if (geoData.length === 0) throw new Error('Ciudad no encontrada.');
 
         const { lat, lon, name, state, country } = geoData[0];
         const fullLocationName = `${name}${state ? ', ' + state : ''}, ${country}`;
         cityInput.value = fullLocationName;
 
-        // --- FETCH CLIMA ACTUAL ---
-        const weatherUrl = `${WEATHER_API_URL}?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=es`;
-        const weatherResponse = await fetch(weatherUrl);
+        const weatherResponse = await fetch(`${WEATHER_API_URL}?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=es`);
         const weatherData = await weatherResponse.json();
-
-        if (!weatherResponse.ok) {
-            throw new Error(weatherData.message || 'Error al obtener el clima actual.');
-        }
+        if (!weatherResponse.ok) throw new Error(weatherData.message || 'Error al obtener clima actual.');
 
         const localTime = getLocalTime(weatherData.dt, weatherData.timezone);
         const iconUrl = `https://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`;
@@ -114,8 +78,7 @@ async function getWeatherAndForecast(cityOverride) {
         );
         const weatherClass = isGood ? "good-weather" : "bad-weather";
 
-        // Generar HTML del clima actual
-        let weatherHtml = `
+        currentWeatherDisplay.innerHTML = `
             <div class="weather-card ${weatherClass}">
                 <h2><i class="fas fa-map-marker-alt"></i> ${fullLocationName} <span class="local-time">(${localTime} Local)</span></h2>
                 <img src="${iconUrl}" alt="Clima">
@@ -128,167 +91,128 @@ async function getWeatherAndForecast(cityOverride) {
                 <p><i class="fas fa-cloud"></i> Estado: ${description.charAt(0).toUpperCase() + description.slice(1)}</p>
             </div>
         `;
-        currentWeatherDisplay.innerHTML = weatherHtml;
 
-
-        // --- FETCH PRONÓSTICO (5 días / 3 horas) ---
-        const forecastUrl = `${FORECAST_API_URL}?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=es`;
-        const forecastResponse = await fetch(forecastUrl);
+        const forecastResponse = await fetch(`${FORECAST_API_URL}?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=es`);
         const forecastData = await forecastResponse.json();
+        if (!forecastResponse.ok) throw new Error(forecastData.message || 'Error al obtener pronóstico.');
 
-        if (!forecastResponse.ok) {
-            throw new Error(forecastData.message || 'Error al obtener el pronóstico.');
-        }
-
-        // Almacenar los datos completos del pronóstico en una variable global para acceso posterior
         hourlyForecastData = forecastData.list;
 
-        // --- Generar Pronóstico por Horas ---
+        // --- Pronóstico por hora ---
         let hourlyHtml = `<h3><i class="fas fa-clock"></i> Pronóstico por Horas</h3><div class="hourly-grid">`;
         const now = new Date();
         let count = 0;
 
-        for (let i = 0; i < hourlyForecastData.length; i++) {
+        for (let i = 0; i < hourlyForecastData.length && count < 8; i++) {
             const item = hourlyForecastData[i];
             const forecastDate = new Date(item.dt * 1000);
-
-            // Muestra las próximas 8 franjas horarias disponibles después de la hora actual
-            if (forecastDate > now && count < 8) {
-                const hour = forecastDate.getHours();
-                const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
-                const tempHourly = item.main.temp.toFixed(0);
-                const descHourly = item.weather[0].description.toLowerCase();
-                const iconHourly = item.weather[0].icon;
-                const iconUrlHourly = `https://openweathermap.org/img/wn/${iconHourly}.png`;
-                
-                // Detalles adicionales para el despliegue animado
-                const humidityDetails = item.main.humidity;
-                const pressureDetails = item.main.pressure;
-                const visibilityKmDetails = (item.visibility / 1000).toFixed(1);
-                const windKmhDetails = (item.wind.speed * 3.6).toFixed(1);
-                const windKtDetails = (windKmhDetails / 1.852).toFixed(1);
-                const windDegDetails = item.wind.deg;
-                const windDirDetails = getCardinalDirection(windDegDetails);
-                const feelsLikeDetails = item.main.feels_like.toFixed(1);
-
-                // Incluimos la estructura HTML para la expansión
+            if (forecastDate > now) {
+                const hour = forecastDate.getHours().toString().padStart(2, '0');
+                const temp = item.main.temp.toFixed(0);
+                const desc = item.weather[0].description.toLowerCase();
+                const iconUrl = `https://openweathermap.org/img/wn/${item.weather[0].icon}.png`;
+                const feels = item.main.feels_like.toFixed(1);
+                const wind = (item.wind.speed * 3.6).toFixed(1);
+                const windKt = (wind / 1.852).toFixed(1);
+                const dir = getCardinalDirection(item.wind.deg);
                 hourlyHtml += `
-                    <div class="hourly-item ${descHourly.includes("lluvia") ? "bad-weather" : "good-weather"}" data-index="${i}">
+                    <div class="hourly-item ${desc.includes("lluvia") ? "bad-weather" : "good-weather"}" data-index="${i}">
                         <div class="hourly-summary">
-                            <p class="hourly-time">${timeLabel}</p>
-                            <img src="${iconUrlHourly}" alt="Icono clima hora">
-                            <p class="hourly-temp">${tempHourly}°C</p>
-                            <p class="hourly-desc">${descHourly.charAt(0).toUpperCase() + descHourly.slice(1)}</p>
+                            <p class="hourly-time">${hour}:00</p>
+                            <img src="${iconUrl}" alt="">
+                            <p class="hourly-temp">${temp}°C</p>
+                            <p class="hourly-desc">${desc.charAt(0).toUpperCase() + desc.slice(1)}</p>
                         </div>
                         <div class="hourly-details">
-                            <p><i class="fas fa-thermometer-half"></i> Sensación térmica: ${feelsLikeDetails} °C</p>
-                            <p><i class="fas fa-water"></i> Humedad: ${humidityDetails}%</p>
-                            <p><i class="fas fa-tachometer-alt"></i> Presión: ${pressureDetails} hPa</p>
-                            <p><i class="fas fa-eye"></i> Visibilidad: ${visibilityKmDetails} km</p>
-                            <p><i class="fas fa-wind"></i> Viento: ${windKmhDetails} km/h (${windKtDetails} kt) desde ${windDirDetails}</p>
+                            <p><i class="fas fa-thermometer-half"></i> Sensación térmica: ${feels} °C</p>
+                            <p><i class="fas fa-water"></i> Humedad: ${item.main.humidity}%</p>
+                            <p><i class="fas fa-tachometer-alt"></i> Presión: ${item.main.pressure} hPa</p>
+                            <p><i class="fas fa-eye"></i> Visibilidad: ${(item.visibility / 1000).toFixed(1)} km</p>
+                            <p><i class="fas fa-wind"></i> Viento: ${wind} km/h (${windKt} kt) desde ${dir}</p>
                         </div>
                     </div>
                 `;
                 count++;
             }
         }
-        hourlyHtml += `</div>`;
+        hourlyHtml += '</div>';
         hourlyForecastContainer.innerHTML = hourlyHtml;
-
-        // Añadir el manejador de eventos para los clics en los bloques por hora
         addHourlyClickEvents();
 
-
-        // --- Generar Pronóstico para los próximos días ---
+        // --- Pronóstico diario (mejorado con min/max) ---
         let dailyHtml = `<h3><i class="fas fa-calendar-day"></i> Pronóstico para los próximos días</h3>`;
-
-        const dailyForecasts = {};
-        const today = new Date().toLocaleDateString("es-ES", { year: 'numeric', month: 'numeric', day: 'numeric' });
+        const groupedByDay = {};
 
         hourlyForecastData.forEach(item => {
-            const date = new Date(item.dt * 1000);
-            const dateKey = date.toLocaleDateString("es-ES", { year: 'numeric', month: 'numeric', day: 'numeric' });
-            const hour = date.getHours();
-
-            if (dateKey !== today) {
-                if (!dailyForecasts[dateKey] || (hour >= 12 && hour <= 15)) {
-                    dailyForecasts[dateKey] = item;
-                }
+            const date = new Date(item.dt_txt);
+            const dayKey = date.toISOString().split('T')[0];
+            if (!groupedByDay[dayKey]) {
+                groupedByDay[dayKey] = [];
             }
+            groupedByDay[dayKey].push(item);
         });
 
-        const upcomingDays = Object.values(dailyForecasts).slice(0, 3);
+        const todayKey = new Date().toISOString().split('T')[0];
+        const nextDays = Object.entries(groupedByDay)
+            .filter(([key]) => key !== todayKey)
+            .slice(0, 3);
 
-        if (upcomingDays.length > 0) {
-            upcomingDays.forEach(item => {
-                const dateLabel = new Date(item.dt_txt).toLocaleDateString("es-ES", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "short"
-                });
-                const temp = item.main.temp.toFixed(1);
-                const desc = item.weather[0].description.toLowerCase();
-                const icon = item.weather[0].icon;
-                const iconUrlForecast = `https://openweathermap.org/img/wn/${icon}@2x.png`;
-                const windKmhForecast = (item.wind.speed * 3.6).toFixed(1);
-                const windKtForecast = (windKmhForecast / 1.852).toFixed(1);
-                const windDegForecast = item.wind.deg;
-                const windDirForecast = getCardinalDirection(windDegForecast);
-                const blockClass = desc.includes("lluvia") || parseFloat(windKtForecast) > 20 ? "bad-weather" : "good-weather";
+        nextDays.forEach(([dateKey, entries]) => {
+            let min = Infinity, max = -Infinity;
+            let chosenEntry = entries[Math.floor(entries.length / 2)];
 
-                dailyHtml += `
-                    <div class="forecast-block ${blockClass}">
-                        <h4><i class="fas fa-calendar-day"></i> ${dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</h4>
-                        <img src="${iconUrlForecast}" alt="Icono clima">
-                        <p><i class="fas fa-thermometer-half"></i> Temp: ${temp} °C</p>
-                        <p><i class="fas fa-wind"></i> Viento: ${windKmhForecast} km/h (${windKtForecast} kt) desde ${windDirForecast}</p>
-                        <p><i class="fas fa-cloud"></i> Estado: ${desc.charAt(0).toUpperCase() + desc.slice(1)}</p>
-                    </div>
-                `;
+            entries.forEach(entry => {
+                const t = entry.main.temp;
+                if (t < min) min = t;
+                if (t > max) max = t;
             });
-        } else {
-            dailyHtml += `<p>No se pudo obtener el pronóstico extendido.</p>`;
-        }
+
+            const dateLabel = new Date(chosenEntry.dt_txt).toLocaleDateString("es-ES", {
+                weekday: "long", day: "numeric", month: "short"
+            });
+
+            const desc = chosenEntry.weather[0].description.toLowerCase();
+            const icon = chosenEntry.weather[0].icon;
+            const wind = (chosenEntry.wind.speed * 3.6).toFixed(1);
+            const windKt = (wind / 1.852).toFixed(1);
+            const dir = getCardinalDirection(chosenEntry.wind.deg);
+            const blockClass = desc.includes("lluvia") || parseFloat(windKt) > 20 ? "bad-weather" : "good-weather";
+
+            dailyHtml += `
+                <div class="forecast-block ${blockClass}">
+                    <h4><i class="fas fa-calendar-day"></i> ${dateLabel}</h4>
+                    <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="Icono">
+                    <p><i class="fas fa-thermometer-quarter"></i> Mín: ${min.toFixed(1)} °C</p>
+                    <p><i class="fas fa-thermometer-three-quarters"></i> Máx: ${max.toFixed(1)} °C</p>
+                    <p><i class="fas fa-wind"></i> Viento: ${wind} km/h (${windKt} kt) desde ${dir}</p>
+                    <p><i class="fas fa-cloud"></i> Estado: ${desc.charAt(0).toUpperCase() + desc.slice(1)}</p>
+                </div>
+            `;
+        });
 
         dailyForecastDisplay.innerHTML = dailyHtml;
 
     } catch (error) {
-        console.error("Error al obtener datos del clima:", error);
-        currentWeatherDisplay.innerHTML = `<p class="error-message">Ocurrió un error: ${error.message}</p>`;
+        console.error(error);
+        currentWeatherDisplay.innerHTML = `<p class="error-message">Error: ${error.message}</p>`;
         hourlyForecastContainer.innerHTML = '';
         dailyForecastDisplay.innerHTML = '';
     }
 }
 
-/**
- * Agrega el manejador de eventos de clic a los bloques de pronóstico por hora.
- */
 function addHourlyClickEvents() {
-    // Obtenemos todos los elementos con la clase hourly-item
-    const hourlyItems = document.querySelectorAll('.hourly-item');
-    
-    // Iteramos sobre ellos y añadimos el event listener
-    hourlyItems.forEach(item => {
-        item.addEventListener('click', (event) => {
-            // Alternar la clase 'expanded' para mostrar/ocultar los detalles y activar la animación
+    document.querySelectorAll('.hourly-item').forEach(item => {
+        item.addEventListener('click', () => {
             item.classList.toggle('expanded');
         });
     });
 }
 
-
-/**
- * Muestra las sugerencias de ciudades obtenidas de la API de Geocodificación de OpenWeatherMap.
- * Aplica un debounce para no hacer demasiadas peticiones al escribir.
- */
 async function displayCitySuggestions(filterText = '') {
-    citySuggestions.innerHTML = ''; 
+    citySuggestions.innerHTML = '';
     citySuggestions.style.display = 'none';
 
-    if (filterText.length < 3) {
-        return;
-    }
-
+    if (filterText.length < 3) return;
     clearTimeout(debounceTimeout);
 
     debounceTimeout = setTimeout(async () => {
@@ -297,92 +221,53 @@ async function displayCitySuggestions(filterText = '') {
             const data = await response.json();
 
             if (data.length > 0) {
-                citySuggestions.style.display = 'block'; 
-                data.forEach(location => {
-                    const suggestionItem = document.createElement('div');
-                    suggestionItem.classList.add('city-suggestion-item');
-                    const locationName = `${location.name}${location.state ? ', ' + location.state : ''}, ${location.country}`;
-                    suggestionItem.textContent = locationName;
-
-                    suggestionItem.addEventListener('mousedown', (e) => {
-                        e.preventDefault(); 
-                        cityInput.value = locationName; 
-                        citySuggestions.style.display = 'none'; 
-                        getWeatherAndForecast(locationName); 
+                citySuggestions.style.display = 'block';
+                data.forEach(loc => {
+                    const item = document.createElement('div');
+                    item.classList.add('city-suggestion-item');
+                    const name = `${loc.name}${loc.state ? ', ' + loc.state : ''}, ${loc.country}`;
+                    item.textContent = name;
+                    item.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        cityInput.value = name;
+                        citySuggestions.style.display = 'none';
+                        getWeatherAndForecast(name);
                     });
-                    citySuggestions.appendChild(suggestionItem);
+                    citySuggestions.appendChild(item);
                 });
-            } else {
-                citySuggestions.style.display = 'none'; 
             }
         } catch (error) {
-            console.error('Error al obtener sugerencias de ciudades:', error);
-            citySuggestions.style.display = 'none';
+            console.error('Error al obtener sugerencias:', error);
         }
     }, 300);
 }
 
-// --- MANEJADORES DE EVENTOS ---
+// --- EVENTOS ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Registrar Service Worker (si tienes service-worker.js, el código original es válido)
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => {
-                    console.log('ServiceWorker registrado con éxito:', registration.scope);
-                })
-                .catch(error => {
-                    console.error('Fallo al registrar ServiceWorker:', error);
-                });
-        });
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(r => console.log('SW registrado:', r.scope))
+            .catch(e => console.error('Error al registrar SW:', e));
     }
 
-    // Comentar o modificar esta línea si no quieres que se busque al cargar
-    if (cityInput.value) {
-        getWeatherAndForecast();
-    }
+    if (cityInput.value) getWeatherAndForecast();
 
-    // Muestra las sugerencias al enfocar el input
     cityInput.addEventListener('focus', () => {
-        if (cityInput.value.length >= 3) {
-            displayCitySuggestions(cityInput.value);
-        }
+        if (cityInput.value.length >= 3) displayCitySuggestions(cityInput.value);
     });
 
-    // Oculta las sugerencias cuando el input pierde el foco
     cityInput.addEventListener('blur', () => {
-        setTimeout(() => {
-            citySuggestions.style.display = 'none';
-        }, 100);
+        setTimeout(() => citySuggestions.style.display = 'none', 100);
     });
 
-    // Filtra y muestra sugerencias mientras el usuario escribe
-    cityInput.addEventListener('input', () => {
-        displayCitySuggestions(cityInput.value);
-    });
+    cityInput.addEventListener('input', () => displayCitySuggestions(cityInput.value));
 
-    // Evento para el botón de búsqueda
     searchButton.addEventListener('click', () => {
-        const city = cityInput.value;
-        if (city) {
-            getWeatherAndForecast(city);
-            citySuggestions.style.display = 'none';
-        } else {
-            console.log("Por favor, ingresa una ciudad.");
-        }
+        if (cityInput.value) getWeatherAndForecast(cityInput.value);
     });
 
-    // Evento para la tecla 'Enter' en el campo de entrada
-    cityInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-            const city = cityInput.value;
-            if (city) {
-                getWeatherAndForecast(city);
-                citySuggestions.style.display = 'none';
-            } else {
-                console.log("Por favor, ingresa una ciudad.");
-            }
-        }
+    cityInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && cityInput.value) getWeatherAndForecast(cityInput.value);
     });
 });
