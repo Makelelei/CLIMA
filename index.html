@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tu App del Clima</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>App del Clima</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="container">
-    <h1><i class="fas fa-sun"></i> ¡Bienvenido al clima divertido!</h1>
-    <p>🌎 Consultá el estado del tiempo en cualquier ciudad del mundo</p>
-    
+    <h1><i class="fas fa-cloud-sun-rain"></i> Centro Meteorológico</h1>
+    <p>🌎 Ingresá una ciudad para ver el clima actual y pronóstico</p>
+
     <div class="input-section">
-      <input type="text" id="cityInput" placeholder="Ej: Córdoba">
-      <button onclick="getWeather()"><i class="fas fa-search-location"></i> Buscar</button>
+      <input type="text" id="cityInput" placeholder="Ej: Rosario" />
+      <button onclick="getWeather(); getForecast();">
+        <i class="fas fa-search-location"></i> Consultar
+      </button>
     </div>
 
     <div id="weatherResult" class="result"></div>
 
     <footer>
-      <p>☁️ Datos vía OpenWeatherMap — <a href="https://openweathermap.org/" target="_blank">ver fuente</a></p>
+      <p>🌍 Datos vía <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a></p>
     </footer>
-  </div>
 
-  <script src="script.js"></script>
+    <script src="script.js"></script>
+  </div>
 </body>
 </html>
