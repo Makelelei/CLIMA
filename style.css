@@ -1,8 +1,8 @@
 :root {
   --primary-gradient-start: #74ebd5;
   --primary-gradient-end: #9face6;
-  --container-bg: #fff;
-  --container-shadow: rgba(0,0,0,0.2);
+  --container-bg: rgba(255, 255, 255, 0.3); /* Cambiado a 30% de transparencia (blanco) */
+  --container-shadow: rgba(0,0,0,0.1); /* Sombra ligera para visibilidad con transparencia */
   --button-bg: #007BFF;
   --button-hover-bg: #0056b3;
   --border-color: #ccc;
@@ -20,10 +20,10 @@
 body {
   font-family: 'Segoe UI', sans-serif;
   /* ¡Aquí está la modificación para tu fondo de imagen! */
-  background-image: url('images/fondo.jpg'); 
-  background-size: cover; 
-  background-repeat: no-repeat; 
-  background-attachment: fixed; 
+  background-image: url('images/fondo.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   /* La línea 'background: linear-gradient...' ha sido reemplazada */
   margin: 0;
   padding: 0;
@@ -34,10 +34,10 @@ body {
 }
 
 .container {
-  background: var(--container-bg);
+  background: var(--container-bg); /* Usa la variable con 30% de transparencia */
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 0 15px var(--container-shadow);
+  box-shadow: 0 0 15px var(--container-shadow); /* Usa la variable de sombra */
   text-align: center;
   width: 90%;
   max-width: 500px;
@@ -83,7 +83,7 @@ button:hover {
   margin-top: 15px;
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  box-shadow: 0 0 5px rgba(0,0,0,0.1); /* Mantiene una ligera sombra para los bloques internos si es necesario */
   text-align: left; /* Alinea el texto a la izquierda para mejor lectura */
 }
 
@@ -141,9 +141,9 @@ footer a:hover {
 .hourly-section {
     margin-top: 25px;
     padding: 15px;
-    background: var(--container-bg); /* O un color diferente si quieres */
+    background: var(--container-bg); /* Usa la variable con 30% de transparencia */
     border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-shadow: 0 0 10px var(--container-shadow); /* Usa la variable de sombra */
 }
 
 .hourly-section h3 {
@@ -164,7 +164,7 @@ footer a:hover {
 .hourly-item {
     padding: 10px 5px;
     border-radius: 8px;
-    background-color: #f9f9f9; /* Fondo suave para cada ítem */
+    background-color: rgba(255, 255, 255, 0.7); /* Fondo suave con algo de opacidad para visibilidad */
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
@@ -204,13 +204,13 @@ footer a:hover {
 
 /* Ajustes para colores de buen/mal clima en hourly-item */
 .hourly-item.good-weather {
-    background: linear-gradient(to bottom, #e0f2f7, #f0fafa);
+    background: linear-gradient(to bottom, rgba(224, 242, 247, 0.7), rgba(240, 250, 250, 0.7)); /* Con opacidad */
     color: #034f84;
     border: 1px solid #a2d4ee;
 }
 
 .hourly-item.bad-weather {
-    background: linear-gradient(to bottom, #f2e6f4, #fafafa);
+    background: linear-gradient(to bottom, rgba(242, 230, 244, 0.7), rgba(250, 250, 250, 0.7)); /* Con opacidad */
     color: #5a2a7b;
     border: 1px solid #cbb4d4;
 }
