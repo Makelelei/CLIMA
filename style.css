@@ -6,7 +6,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 .container {
@@ -16,13 +16,16 @@ body {
   box-shadow: 0 0 15px rgba(0,0,0,0.2);
   text-align: center;
   width: 90%;
-  max-width: 400px;
+  max-width: 500px;
+}
+
+.input-section {
+  margin-bottom: 20px;
 }
 
 input {
   padding: 10px;
   width: 70%;
-  margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
@@ -42,11 +45,26 @@ button:hover {
 }
 
 .result {
-  margin-top: 20px;
   font-size: 16px;
+  margin-top: 20px;
 }
-.result i {
-  font-size: 40px;
-  margin-bottom: 10px;
-  color: #ffa500;
+
+.weather-card,
+.forecast-block {
+  margin-top: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+.good-weather {
+  background: linear-gradient(to right, #a2d4ee, #cce9f3);
+  color: #034f84;
+  border-left: 5px solid #3498db;
+}
+
+.bad-weather {
+  background: linear-gradient(to right, #cbb4d4, #e2c1e8);
+  color: #5a2a7b;
+  border-left: 5px solid #8e44ad;
 }
