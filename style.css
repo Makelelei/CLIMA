@@ -19,7 +19,12 @@
 
 body {
   font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(to right, var(--primary-gradient-start), var(--primary-gradient-end));
+  /* ¡Aquí está la modificación para tu fondo de imagen! */
+  background-image: url('images/fondo.jpg'); 
+  background-size: cover; 
+  background-repeat: no-repeat; 
+  background-attachment: fixed; 
+  /* La línea 'background: linear-gradient...' ha sido reemplazada */
   margin: 0;
   padding: 0;
   display: flex;
@@ -130,4 +135,97 @@ footer a:hover {
   input, button {
     width: 100%; /* Ocupan todo el ancho disponible */
   }
+}
+
+/* Estilos para el contenedor del pronóstico por horas */
+.hourly-section {
+    margin-top: 25px;
+    padding: 15px;
+    background: var(--container-bg); /* O un color diferente si quieres */
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.hourly-section h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.3em;
+}
+
+.hourly-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Columnas responsivas */
+    gap: 15px;
+    justify-content: center;
+    text-align: center;
+}
+
+.hourly-item {
+    padding: 10px 5px;
+    border-radius: 8px;
+    background-color: #f9f9f9; /* Fondo suave para cada ítem */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.9em;
+    border: 1px solid #eee;
+    transition: transform 0.2s ease;
+}
+
+.hourly-item:hover {
+    transform: translateY(-3px);
+}
+
+.hourly-item img {
+    width: 40px; /* Tamaño del icono */
+    height: 40px;
+    margin-bottom: 5px;
+}
+
+.hourly-item .hourly-time {
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.hourly-item .hourly-temp {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 3px;
+}
+
+.hourly-item .hourly-desc {
+    color: #777;
+    font-size: 0.8em;
+}
+
+/* Ajustes para colores de buen/mal clima en hourly-item */
+.hourly-item.good-weather {
+    background: linear-gradient(to bottom, #e0f2f7, #f0fafa);
+    color: #034f84;
+    border: 1px solid #a2d4ee;
+}
+
+.hourly-item.bad-weather {
+    background: linear-gradient(to bottom, #f2e6f4, #fafafa);
+    color: #5a2a7b;
+    border: 1px solid #cbb4d4;
+}
+
+/* Media Query para pantallas muy pequeñas (opcional) */
+@media (max-width: 400px) {
+    .hourly-grid {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 10px;
+    }
+    .hourly-item {
+        font-size: 0.8em;
+    }
+    .hourly-item img {
+        width: 35px;
+        height: 35px;
+    }
 }
