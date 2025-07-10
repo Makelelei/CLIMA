@@ -1,4 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Registrar Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+          console.log('ServiceWorker registrado con éxito:', registration.scope);
+        })
+        .catch(error => {
+          console.error('Fallo al registrar ServiceWorker:', error);
+        });
+    });
+  }
+
+  // Manejadores de búsqueda
   const searchButton = document.getElementById('searchButton');
   searchButton.addEventListener('click', () => {
     getWeatherAndForecast();
@@ -10,29 +24,29 @@ document.addEventListener('DOMContentLoaded', () => {
       getWeatherAndForecast();
     }
   });
+
+  // Aquí podrías agregar tu código de fondo animado si lo tienes
 });
 
 // Función auxiliar para obtener la dirección cardinal del viento
 function getCardinalDirection(degrees) {
-  const dirs = ['Norte', 'Noreste', 'Este', 'Oeste', 'Suroeste', 'Sur', 'Noroeste']; // Ajustado para 7 puntos
+  const dirs = ['Norte', 'Noreste', 'Este', 'Sureste', 'Sur', 'Suroeste', 'Oeste', 'Noroeste'];
   const index = Math.round(degrees / 45) % 8;
   return dirs[index];
 }
 
 async function getWeatherAndForecast() {
-  const city = document.getElementById("cityInput").value.trim(); // .trim() para limpiar espacios
+  const city = document.getElementById("cityInput").value.trim();
   if (!city) {
     document.getElementById("weatherResult").innerHTML = `<p class="error-message">Por favor, ingresa el nombre de una ciudad.</p>`;
     return;
   }
 
-  const apiKey = "c4381f22c73ec16dc79729cec227af4e"; // Tu clave de API
-
+  const apiKey = "c4381f22c73ec16dc79729cec227af4e";
   const weatherResultContainer = document.getElementById("weatherResult");
-  weatherResultContainer.innerHTML = '<p>Cargando datos...</p>'; // Mensaje de carga
+  weatherResultContainer.innerHTML = '<p>Cargando datos...</p>';
 
   try {
-    // **1. Obtener clima actual**
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=es`;
     const weatherResponse = await fetch(weatherUrl);
     const weatherData = await weatherResponse.json();
@@ -45,7 +59,6 @@ async function getWeatherAndForecast() {
     const temp = weatherData.main.temp;
     const humidity = weatherData.main.humidity;
     const pressure = weatherData.main.pressure;
-    // La visibilidad viene en metros, a veces 10000 es el máximo
     const visibilityKm = (weatherData.visibility / 1000).toFixed(1); 
     const windKmh = (weatherData.wind.speed * 3.6).toFixed(1);
     const windKt = (windKmh / 1.852).toFixed(1);
@@ -53,7 +66,6 @@ async function getWeatherAndForecast() {
     const windDir = getCardinalDirection(windDeg);
     const description = weatherData.weather[0].description.toLowerCase();
 
-    // Lógica para determinar "buen" o "mal" clima
     const isGood = (
       description.includes("despejado") ||
       description.includes("cielo claro") ||
@@ -75,7 +87,6 @@ async function getWeatherAndForecast() {
       </div>
     `;
 
-    // **2. Obtener pronóstico extendido**
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric&lang=es`;
     const forecastResponse = await fetch(forecastUrl);
     const forecastData = await forecastResponse.json();
@@ -86,24 +97,21 @@ async function getWeatherAndForecast() {
 
     let forecastHtml = `<h3><i class="fas fa-calendar-day"></i> Pronóstico para los próximos días</h3>`;
 
-    // Agrupar pronósticos por día y tomar el del mediodía (o el más cercano)
     const dailyForecasts = {};
     const today = new Date().toLocaleDateString("es-ES", { year: 'numeric', month: 'numeric', day: 'numeric' });
 
     forecastData.list.forEach(item => {
-      const date = new Date(item.dt * 1000); // Convertir timestamp a fecha
+      const date = new Date(item.dt * 1000);
       const dateKey = date.toLocaleDateString("es-ES", { year: 'numeric', month: 'numeric', day: 'numeric' });
       const hour = date.getHours();
 
-      // Ignorar el día actual y tomar la entrada cercana al mediodía (12-15h)
       if (dateKey !== today) {
-        if (!dailyForecasts[dateKey] || (hour >= 12 && hour <= 15)) { // Prioriza la entrada del mediodía
+        if (!dailyForecasts[dateKey] || (hour >= 12 && hour <= 15)) {
           dailyForecasts[dateKey] = item;
         }
       }
     });
-    
-    // Convertir a array y limitar a los próximos 3 días
+
     const upcomingDays = Object.values(dailyForecasts).slice(0, 3);
 
     if (upcomingDays.length > 0) {
@@ -136,8 +144,7 @@ async function getWeatherAndForecast() {
     } else {
       forecastHtml += `<p>No se pudo obtener el pronóstico extendido.</p>`;
     }
-    
-    // Unir el HTML del clima actual y el pronóstico
+
     weatherResultContainer.innerHTML = weatherHtml + forecastHtml;
 
   } catch (error) {
