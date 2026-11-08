@@ -2,49 +2,205 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CLIMA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CLIMA · El clima, día a día</title>
+  <meta name="description" content="Clima actual, pronóstico por hora y a 16 días, calidad del aire, radar de lluvia, índice UV, sol y luna para cualquier ciudad del mundo." />
+  <meta name="theme-color" content="#14284a" />
+  <meta property="og:title" content="CLIMA · El clima, día a día" />
+  <meta property="og:description" content="Pronóstico por hora y a 16 días, radar, calidad del aire y más." />
+  <meta property="og:image" content="images/icon-512x512.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="images/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="images/icon-192x192.png" />
+  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <div class="container">
-    <h1><i class="fas fa-cloud-sun-rain"></i>El clima, dia a dia.</h1>
-    <p>Escribe tu ciudad, solamentem🌎</p>
-    <div class="input-section">
-      <!-- Aquí se ha añadido el atributo 'value' para prellenar el campo de texto -->
-      <input type="text" id="cityInput" value="Buenos Aires, Autonomous City of Buenos Aires, Argentina" placeholder="Ej: Rosario" />
-      <button id="searchButton">
-        <i class="fas fa-search-location"></i> Consultar
-      </button>
-      <!-- Nuevo contenedor para las sugerencias de ciudades -->
-      <div id="citySuggestions" class="city-suggestions"></div>
-    </div>
-    <div id="currentWeatherDisplay" class="result">
-        </div>
-    <div id="hourlyForecast" class="hourly-section">
-        </div>
-    <div id="dailyForecastDisplay" class="result">
-        </div>
-    <footer>
-      <p>🌍 Datos vía <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a></p>
-    </footer>
-  </div>
-  <script src="script.js"></script>
-</body>
-</html>
-    <div id="currentWeatherDisplay" class="result">
-        </div>
-    <div id="hourlyForecast" class="hourly-section">
-        </div>
-    <div id="dailyForecastDisplay" class="result">
-        </div>
-    <footer>
-      <p>🌍 Datos vía <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a></p>
-    </footer>
-  </div>
-  <script src="script.js"></script>
-</body>
-</html>
+  <div id="sky" class="sky sky-clear-day" aria-hidden="true"></div>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div id="flash" class="flash" aria-hidden="true"></div>
 
+  <div class="app">
+    <!-- ============ CABECERA ============ -->
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="CLIMA, inicio">
+        <i class="fas fa-cloud-sun-rain"></i>
+        <span class="brand-text"><strong>CLIMA</strong><small>El clima, día a día</small></span>
+      </a>
+
+      <div class="search" role="search">
+        <i class="fas fa-magnifying-glass search-ico" aria-hidden="true"></i>
+        <input id="cityInput" type="search" placeholder="Buscá una ciudad… (ej: Rosario)" autocomplete="off" spellcheck="false"
+               role="combobox" aria-label="Buscar ciudad" aria-autocomplete="list" aria-controls="citySuggestions" aria-expanded="false" />
+        <kbd class="kbd" aria-hidden="true">/</kbd>
+        <button id="searchButton" class="btn btn-primary" type="button"><span>Consultar</span><i class="fas fa-arrow-right"></i></button>
+        <ul id="citySuggestions" class="suggestions" role="listbox" hidden></ul>
+      </div>
+
+      <div class="top-actions">
+        <button id="geoBtn" class="icon-btn" type="button" title="Usar mi ubicación" aria-label="Usar mi ubicación"><i class="fas fa-location-crosshairs"></i></button>
+        <button id="installBtn" class="icon-btn" type="button" title="Instalar app" aria-label="Instalar app" hidden><i class="fas fa-download"></i></button>
+        <button id="settingsBtn" class="icon-btn" type="button" title="Ajustes" aria-label="Ajustes"><i class="fas fa-sliders"></i></button>
+      </div>
+    </header>
+
+    <nav id="favoritesBar" class="favorites-bar" aria-label="Ciudades favoritas"></nav>
+
+    <div id="offlineBanner" class="banner banner-warn" hidden>
+      <i class="fas fa-plug-circle-xmark"></i> Sin conexión. Estás viendo los últimos datos guardados.
+    </div>
+    <div id="alerts" class="alerts" aria-live="polite"></div>
+
+    <main id="main">
+      <!-- ============ AHORA + CONSEJOS ============ -->
+      <section class="grid-hero">
+        <article id="hero" class="card hero">
+          <div class="skeleton sk-title"></div>
+          <div class="skeleton sk-big"></div>
+          <div class="skeleton sk-line"></div>
+          <div class="skeleton sk-line short"></div>
+        </article>
+        <article id="insights" class="card insights">
+          <h2 class="card-title"><i class="fas fa-wand-magic-sparkles"></i> Consejos para hoy</h2>
+          <div class="skeleton sk-line"></div><div class="skeleton sk-line"></div><div class="skeleton sk-line short"></div>
+        </article>
+      </section>
+
+      <!-- ============ POR HORA ============ -->
+      <section id="hourlySection" class="card">
+        <div class="section-head">
+          <h2 class="card-title"><i class="fas fa-clock"></i> <span id="hourlyTitle">Próximas 24 horas</span></h2>
+          <div id="chartTabs" class="tabs" role="tablist" aria-label="Variable del gráfico">
+            <button type="button" role="tab" data-metric="temp" class="active" aria-selected="true"><i class="fas fa-temperature-half"></i> Temp.</button>
+            <button type="button" role="tab" data-metric="rain" aria-selected="false"><i class="fas fa-droplet"></i> Lluvia</button>
+            <button type="button" role="tab" data-metric="wind" aria-selected="false"><i class="fas fa-wind"></i> Viento</button>
+            <button type="button" role="tab" data-metric="humidity" aria-selected="false"><i class="fas fa-water"></i> Humedad</button>
+            <button type="button" role="tab" data-metric="uv" aria-selected="false"><i class="fas fa-sun"></i> UV</button>
+            <button type="button" role="tab" data-metric="clouds" aria-selected="false"><i class="fas fa-cloud"></i> Nubes</button>
+            <button type="button" role="tab" data-metric="pressure" aria-selected="false"><i class="fas fa-gauge"></i> Presión</button>
+          </div>
+        </div>
+        <div class="scroll-wrap">
+          <button class="scroll-btn left" type="button" data-scroll="-1" aria-label="Horas anteriores"><i class="fas fa-chevron-left"></i></button>
+          <div id="hourlyScroller" class="hourly-scroller" tabindex="0" aria-label="Pronóstico por hora"></div>
+          <button class="scroll-btn right" type="button" data-scroll="1" aria-label="Horas siguientes"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div id="hourDetail" class="hour-detail"></div>
+      </section>
+
+      <!-- ============ 16 DÍAS ============ -->
+      <section class="grid-days">
+        <article id="dailySection" class="card">
+          <h2 class="card-title"><i class="fas fa-calendar-days"></i> Pronóstico a 16 días</h2>
+          <div id="dailyList" class="daily-list"></div>
+        </article>
+        <article id="dayDetail" class="card day-detail"></article>
+      </section>
+
+      <!-- ============ DETALLES ============ -->
+      <section>
+        <h2 class="section-title"><i class="fas fa-layer-group"></i> Condiciones en detalle</h2>
+        <div id="tiles" class="tiles"></div>
+      </section>
+
+      <!-- ============ AIRE ============ -->
+      <section id="airSection" class="card air"></section>
+
+      <!-- ============ MAPA ============ -->
+      <section id="mapSection" class="card">
+        <div class="section-head">
+          <h2 class="card-title"><i class="fas fa-map-location-dot"></i> Mapa del tiempo</h2>
+          <div id="mapLayers" class="tabs" role="tablist" aria-label="Capa del mapa">
+            <button type="button" data-layer="radar" class="active"><i class="fas fa-satellite-dish"></i> Radar</button>
+            <button type="button" data-layer="precipitation_new"><i class="fas fa-cloud-rain"></i> Lluvia</button>
+            <button type="button" data-layer="clouds_new"><i class="fas fa-cloud"></i> Nubes</button>
+            <button type="button" data-layer="temp_new"><i class="fas fa-temperature-half"></i> Temp.</button>
+            <button type="button" data-layer="wind_new"><i class="fas fa-wind"></i> Viento</button>
+            <button type="button" data-layer="pressure_new"><i class="fas fa-gauge"></i> Presión</button>
+          </div>
+        </div>
+        <div class="map-wrap">
+          <div id="map" role="region" aria-label="Mapa interactivo"></div>
+          <div id="radarControls" class="radar-controls">
+            <button id="radarPlay" class="icon-btn" type="button" aria-label="Reproducir radar"><i class="fas fa-play"></i></button>
+            <input id="radarSlider" type="range" min="0" max="0" value="0" aria-label="Momento del radar" />
+            <span id="radarTime" class="radar-time">--:--</span>
+          </div>
+        </div>
+        <p class="hint"><i class="fas fa-hand-pointer"></i> Tocá cualquier punto del mapa para ver el clima de ese lugar.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        Pronóstico: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+        Búsqueda y capas: <a href="https://openweathermap.org/" target="_blank" rel="noopener">OpenWeatherMap</a> ·
+        Radar: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a> ·
+        Mapa: <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> / <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a>
+      </p>
+      <p class="muted">Atajos: <kbd>/</kbd> buscar · <kbd>U</kbd> °C/°F · <kbd>R</kbd> actualizar · <kbd>F</kbd> favorito · <kbd>L</kbd> mi ubicación</p>
+    </footer>
+  </div>
+
+  <!-- ============ AJUSTES ============ -->
+  <dialog id="settingsDialog" class="dialog">
+    <form method="dialog" id="settingsForm">
+      <header class="dialog-head">
+        <h2><i class="fas fa-sliders"></i> Ajustes</h2>
+        <button class="icon-btn" value="cancel" aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
+      </header>
+
+      <fieldset>
+        <legend>Temperatura</legend>
+        <div class="seg">
+          <label><input type="radio" name="temp" value="c" /><span>°C</span></label>
+          <label><input type="radio" name="temp" value="f" /><span>°F</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Viento</legend>
+        <div class="seg">
+          <label><input type="radio" name="wind" value="kmh" /><span>km/h</span></label>
+          <label><input type="radio" name="wind" value="kt" /><span>nudos</span></label>
+          <label><input type="radio" name="wind" value="ms" /><span>m/s</span></label>
+          <label><input type="radio" name="wind" value="mph" /><span>mph</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Presión</legend>
+        <div class="seg">
+          <label><input type="radio" name="pressure" value="hpa" /><span>hPa</span></label>
+          <label><input type="radio" name="pressure" value="mmhg" /><span>mmHg</span></label>
+          <label><input type="radio" name="pressure" value="inhg" /><span>inHg</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Precipitación</legend>
+        <div class="seg">
+          <label><input type="radio" name="precip" value="mm" /><span>mm</span></label>
+          <label><input type="radio" name="precip" value="in" /><span>pulgadas</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Pantalla</legend>
+        <label class="switch"><input type="checkbox" name="fx" /><span class="slider"></span> Animaciones del clima (lluvia, nieve, estrellas)</label>
+      </fieldset>
+
+      <footer class="dialog-foot">
+        <button type="button" id="clearDataBtn" class="btn btn-ghost"><i class="fas fa-trash-can"></i> Borrar datos guardados</button>
+        <button value="ok" class="btn btn-primary">Listo</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
